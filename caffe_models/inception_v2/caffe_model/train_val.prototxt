@@ -1,9 +1,48 @@
 name: "TensorFlowToSynopsysCaffe"
-input: "data"
-input_dim: 1
-input_dim: 3
-input_dim: 224
-input_dim: 224
+layer {
+  name: "data"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    scale: 0.0078431368
+    mean_value: 127.5 
+    mean_value: 127.5
+    mean_value: 127.5
+    mirror: true
+    crop_size: 224
+  }
+  data_param {
+    source: "imagenet_rgb/ilsvrc12_train_lmdb"
+    batch_size: 32
+    backend: LMDB
+  }
+}
+layer {
+  name: "data"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  transform_param {
+    scale: 0.0078431368
+    mean_value: 127.5 
+    mean_value: 127.5
+    mean_value: 127.5
+    mirror: false
+    crop_size: 224
+  }
+  data_param {
+    source: "imagenet_rgb/ilsvrc12_val_lmdb"
+    batch_size: 20
+    backend: LMDB
+  }
+}
 layer {
   name: "InceptionV2__InceptionV2__Conv2d_1a_7x7__separable_conv2d__depthwise"
   type: "Convolution"
@@ -3371,21 +3410,51 @@ layer {
     }
   }
 }
+#layer {
+#  name: "InceptionV2__Predictions__Softmax"
+#  type: "Softmax"
+#  bottom: "InceptionV2__Predictions__Reshape"
+#  top: "InceptionV2__Predictions__Softmax"
+#}
+#layer {
+#  name: "InceptionV2__Predictions__Reshape_1"
+#  type: "Reshape"
+#  bottom: "InceptionV2__Predictions__Softmax"
+#  top: "InceptionV2__Predictions__Reshape_1"
+#  reshape_param {
+#    shape {
+#      dim: 1
+#      dim: 1001
+#    }
+#  }
+#}
 layer {
-  name: "InceptionV2__Predictions__Softmax"
-  type: "Softmax"
+  name: "loss"
+  type: "SoftmaxWithLoss"
   bottom: "InceptionV2__Predictions__Reshape"
-  top: "InceptionV2__Predictions__Softmax"
+  bottom: "label"
+  top: "loss"
 }
 layer {
-  name: "InceptionV2__Predictions__Reshape_1"
-  type: "Reshape"
-  bottom: "InceptionV2__Predictions__Softmax"
-  top: "InceptionV2__Predictions__Reshape_1"
-  reshape_param {
-    shape {
-      dim: 1
-      dim: 1001
-    }
+  name: "accuracy@1"
+  type: "Accuracy"
+  bottom: "InceptionV2__Predictions__Reshape"
+  bottom: "label"
+  top: "accuracy@1"
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "accuracy@5"
+  type: "Accuracy"
+  bottom: "InceptionV2__Predictions__Reshape"
+  bottom: "label"
+  top: "accuracy@5"
+  include {
+    phase: TEST
+  }
+  accuracy_param {
+    top_k: 5
   }
 }
