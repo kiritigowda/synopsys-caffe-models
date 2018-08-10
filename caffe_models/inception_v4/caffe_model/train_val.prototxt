@@ -1,9 +1,48 @@
 name: "TensorFlowToSynopsysCaffe"
-input: "data"
-input_dim: 1
-input_dim: 3
-input_dim: 299
-input_dim: 299
+layer {
+  name: "data"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    scale: 0.0078431368
+    mean_value: 127.5 
+    mean_value: 127.5
+    mean_value: 127.5
+    mirror: true
+    crop_size: 299
+  }
+  data_param {
+    source: "imagenet_rgb/ilsvrc12_train_lmdb"
+    batch_size: 4
+    backend: LMDB
+  }
+}
+layer {
+  name: "data"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  transform_param {
+    scale: 0.0078431368
+    mean_value: 127.5 
+    mean_value: 127.5
+    mean_value: 127.5
+    mirror: false
+    crop_size: 299
+  }
+  data_param {
+    source: "imagenet_rgb/ilsvrc12_val_lmdb"
+    batch_size: 10
+    backend: LMDB
+  }
+}
 layer {
   name: "InceptionV4__InceptionV4__Conv2d_1a_3x3__Conv2D"
   type: "Convolution"
@@ -7217,9 +7256,46 @@ layer {
   bottom: "InceptionV4__Logits__Logits__MatMul"
   top: "InceptionV4__Logits__Logits__BiasAdd"
 }
+#layer {
+#  name: "InceptionV4__Logits__Predictions"
+#  type: "Softmax"
+#  bottom: "InceptionV4__Logits__Logits__BiasAdd"
+#  top: "InceptionV4__Logits__Predictions"
+#}
 layer {
-  name: "InceptionV4__Logits__Predictions"
-  type: "Softmax"
+  name: "loss"
+  type: "SoftmaxWithLoss"
   bottom: "InceptionV4__Logits__Logits__BiasAdd"
-  top: "InceptionV4__Logits__Predictions"
+  bottom: "label"
+  top: "loss"
+}
+layer {
+  name: "accuracy"
+  type: "Accuracy"
+  bottom: "InceptionV4__AuxLogits__Aux_logits__BiasAdd"
+  bottom: "label"
+  top: "accuracy"
+}
+layer {
+  name: "accuracy@1"
+  type: "Accuracy"
+  bottom: "InceptionV4__Logits__Logits__BiasAdd"
+  bottom: "label"
+  top: "accuracy@1"
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "accuracy@5"
+  type: "Accuracy"
+  bottom: "InceptionV4__Logits__Logits__BiasAdd"
+  bottom: "label"
+  top: "accuracy@5"
+  include {
+    phase: TEST
+  }
+  accuracy_param {
+    top_k: 5
+  }
 }
